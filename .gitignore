@@ -5,4 +5,4 @@ venv/
 .env
 *.pem
 id_ed25519*
-id_rsa*
+id_rsa*token.txt

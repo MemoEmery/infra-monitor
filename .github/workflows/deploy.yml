@@ -1,0 +1,67 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validar arquivos
+        run: |
+          test -f app.py
+          test -f requirements.txt
+          test -f Dockerfile
+          test -f scripts/deploy.sh
+          bash -n scripts/deploy.sh
+          python3 -m py_compile app.py
+
+      - name: Configurar SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy no servidor
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$SSH_USER@$SSH_HOST" 'bash -s' < scripts/deploy.sh
+
+      - name: Teste de saude publico
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          for i in $(seq 1 15); do
+            if curl -fsS --max-time 5 "http://$SSH_HOST/" >/dev/null; then
+              echo "Aplicacao respondeu HTTP 200."
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "A aplicacao nao respondeu pela internet."
+          exit 1
+
+      - name: Remover chave do runner
+        if: always()
+        run: rm -f ~/.ssh/id_deploy
