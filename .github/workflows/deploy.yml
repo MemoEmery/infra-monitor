@@ -28,7 +28,7 @@ jobs:
           bash -n scripts/deploy.sh
           python3 -m py_compile app.py
 
-      - name: Configurar SSH
+            - name: Configurar SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
