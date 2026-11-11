@@ -86,6 +86,6 @@ docker ps
 docker logs infra-monitor
 ```
 
-Abra **http://localhost**. O hostname exibido deve ser igual ao `CONTAINER ID` do `docker ps`. Após cerca de 40 segundos o container aparece como `(healthy)`.
+Abra **(http://20.85.245.123/)**. O hostname exibido deve ser igual ao `CONTAINER ID` do `docker ps`. Após cerca de 40 segundos o container aparece como `(healthy)`.
 
 Par
